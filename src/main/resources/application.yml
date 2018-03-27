@@ -1,0 +1,47 @@
+logging:
+  level:
+    jdbc:
+      sqlonly: info
+      resultsettable: info
+      sqltiming: fatal
+      audit: fatal
+      resultset: fatal
+      connection: fatal
+    org:
+      springframework:
+        orm:
+          jpa: debug
+#      hibernate:
+#        stat: debug
+#        hql: debug
+#        cache: info
+#        jdbc: debug
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/json-demo
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+      naming:
+        physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQL95Dialect
+        temp.use_jdbc_metadata_defaults: false
+        generate_statistics: true
+        order_inserts: true
+        order_updates: true
+        jdbc:
+          lob.non_contextual_creation: true
+          batch_size: 50
+          fetch_size: 20
+          batch_versioned_data: true
+
+
+
