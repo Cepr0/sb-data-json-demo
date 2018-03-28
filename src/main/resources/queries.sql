@@ -110,7 +110,7 @@ select distinct
   p.*
 from
   parents p
-  left join jsonb_array_elements(p.children) child on true
+  left join jsonb_array_elements(p.children) c on true
 where
   json2text(p.children, 'name') ~* 'olga'
   and
@@ -120,7 +120,7 @@ where
   --   and
   json2arr(p.children, 'gender') @> '{MALE}'
   and
-  (child->>'birthDate')::date between '2000-01-01' and '2010-12-31'
+  (c ->> 'birthDate')::date between '2000-01-01' and '2010-12-31'
   order by
     p.name
 limit 20 offset 0;
@@ -132,6 +132,17 @@ from
   parents p, jsonb_array_elements(p.children) c
 where
   (c ->> 'age')::int between 10 and 12;
+
+explain analyze
+select
+  p.*
+from
+  parents p
+where exists(
+  select from jsonb_array_elements(p.children) c
+--   where (c ->> 'age')::int between 10 and 12
+  where (c->>'birthDate')::date between '2000-01-01' and '2010-12-31'
+) limit 20 offset 100;
 
 explain analyze
 with t as (select id, jsonb_array_elements(children) as c from parents)
