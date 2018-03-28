@@ -65,10 +65,10 @@ explain analyze select * from parents p where p.id = 3;
 explain analyze select * from parents p where p.name like '%elda Ha%';
 explain analyze select * from parents p where p.name ~* 'zelda h';
 explain analyze select * from parents p where p.name = 'Zelda Hartmann';
-select set_limit(0.2);
+select set_limit(0.5);
 explain analyze select * from parents p where p.name % 'sa funk';
 
-explain analyze select p.* from parents p where p.phones ? '380.029.9677';
+explain analyze select p.* from parents p where p.phones ? '1-430-038-3694';
 explain analyze select p.* from parents p where translate(cast(phones as text), ' +-.()[]', '') ~ '299677';
 
 explain analyze select * from parents p
@@ -100,7 +100,7 @@ select
 from
   parents p
 where
-  json2tsvector(p.children) @@ to_tsquery('helen')
+  json2tsvector(p.children) @@ to_tsquery('hellen')
 order by
   p.name
 limit 20;
@@ -112,18 +112,47 @@ from
   parents p
   left join jsonb_array_elements(p.children) child on true
 where
-  json2text(p.children, 'name') ~* 'peter'
+  json2text(p.children, 'name') ~* 'olga'
   and
   translate(cast(phones as text), ' +-.()[]', '') ~ '776'
   and
   --   (child->>'age')::int > 15
   --   and
-  json2text(p.children, 'gender') ~ '[[:<:]]FEMALE[[:>:]]'
+  json2arr(p.children, 'gender') @> '{MALE}'
   and
   (child->>'birthDate')::date between '2000-01-01' and '2010-12-31'
   order by
     p.name
 limit 20 offset 0;
+
+explain analyze
+select distinct
+  p.*
+from
+  parents p, jsonb_array_elements(p.children) c
+where
+  (c ->> 'age')::int between 10 and 12;
+
+explain analyze
+with t as (select id, jsonb_array_elements(children) as c from parents)
+select
+  *
+from
+  parents
+where
+  id in (select id from t where (c->>'age')::int between 10 and 12);
+
+
+explain analyze
+select distinct
+  p.*
+from
+  parents p, jsonb_array_elements(p.children) c
+where
+  p.name ~* 'olga'
+    and
+  (c->>'age')::int between 10 and 12
+order by p.id;
 
 ---------------
 
