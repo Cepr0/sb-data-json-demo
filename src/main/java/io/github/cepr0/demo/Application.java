@@ -15,7 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import java.sql.Date;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,8 +25,8 @@ public class Application {
 	@PersistenceContext
 	private EntityManager em;
 
-//	@Value("${spring.jpa.properties.hibernate.jdbc.batch_size}")
-	private int batchSize = 100;
+	@Value("${spring.jpa.properties.hibernate.jdbc.batch_size:100}")
+	private int batchSize;
 
 	public static void main(String[] args) {
 		SpringApplication.run(Application.class, args);

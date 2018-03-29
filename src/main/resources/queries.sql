@@ -140,8 +140,8 @@ from
   parents p
 where exists(
   select from jsonb_array_elements(p.children) c
---   where (c ->> 'age')::int between 10 and 12
-  where (c->>'birthDate')::date between '2000-01-01' and '2010-12-31'
+  where (c ->> 'age')::int between 10 and 12
+--   where (c->>'birthDate')::date between '2000-01-01' and '2010-12-31'
 ) limit 20 offset 100;
 
 explain analyze
