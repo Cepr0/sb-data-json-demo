@@ -4,6 +4,7 @@ import com.github.javafaker.Faker;
 import io.github.cepr0.demo.model.Child;
 import io.github.cepr0.demo.model.Gender;
 import io.github.cepr0.demo.model.Parent;
+import io.github.cepr0.demo.repo.ParentRepo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
@@ -24,16 +25,28 @@ public class Application {
 
 	@PersistenceContext
 	private EntityManager em;
+	
+	private final ParentRepo repo;
 
 	@Value("${spring.jpa.properties.hibernate.jdbc.batch_size:100}")
 	private int batchSize;
-
+	
+	public Application(ParentRepo repo) {
+		this.repo = repo;
+	}
+	
 	public static void main(String[] args) {
 		SpringApplication.run(Application.class, args);
 	}
-
-	@Transactional
+	
 	@EventListener
+	public void readDb(ApplicationReadyEvent e) {
+		repo.findByChildName("Helen")
+				.forEach(System.out::println);
+	}
+	
+	@Transactional
+//	@EventListener
 	public void onReady(ApplicationReadyEvent e) {
 		em.createQuery("delete from Parent").executeUpdate();
 		log.info("Data is cleaned.");

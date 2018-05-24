@@ -1,3 +1,81 @@
+-- Creating the custom operator
+-- https://stackoverflow.com/a/50488457/5380322
+
+-- Find oid and other info of replaced operator
+select oid, * from pg_catalog.pg_operator where oprname = '?' and oprleft = (
+  select oid from pg_type where typname = 'jsonb'
+);
+-- 3247
+
+-- drop operator ^ (jsonb, text);
+
+-- Create the new operator
+create operator ^ (
+  procedure = jsonb_exists,
+  leftarg = jsonb,
+  rightarg = text,
+  restrict = contsel,
+  join = contjoinsel
+);
+
+-- Find opcfamily of replaced operator
+select opcfamily from pg_opclass where
+  opcintype = (select oid from pg_type where typname = 'jsonb')
+  and opcmethod = (select oid from pg_am where amname = 'gin')
+  and opcdefault;
+-- 4036
+
+-- Find amopstrategy for replaced operator
+select
+  amopstrategy,
+  (select typname from pg_type where oid = amoplefttype) as left_t,
+  (select typname from pg_type where oid = amoprighttype) as right_t,
+  *
+from pg_amop
+where
+  amopfamily = 4036 --family oid
+  and amopopr = 3247 --operator oid
+;
+-- amopstrategy: 9
+
+-- Get a list of amprocnum and amproc of replaced operator
+select
+  amprocnum,
+  amproc::text,
+  pg_get_function_identity_arguments(amproc::oid)           as args,
+  (select typname from pg_type where oid = amproclefttype)  as left_t,
+  (select typname from pg_type where oid = amprocrighttype) as right_t,
+  *
+from pg_amproc
+where amprocfamily = 4036 --op family
+;
+-- 1, gin_compare_jsonb
+-- 2, gin_extract_jsonb
+-- 3, gin_extract_jsonb_query
+-- 4, gin_consistent_jsonb
+-- 6, gin_triconsistent_jsonb
+
+-- drop operator class jsonb_ops_custom using gin;
+
+-- Create a custom operator class with amopstrategy and the list of amprocnum and amproc
+create operator class jsonb_ops_custom
+for type jsonb using gin as
+operator 9 ^ (jsonb, text), -- amopstrategy
+function 1 gin_compare_jsonb(text, text),
+function 2 gin_extract_jsonb(jsonb, internal, internal),
+function 3 gin_extract_jsonb_query(jsonb, internal, smallint, internal, internal, internal, internal),
+function 4 gin_consistent_jsonb(internal, smallint, jsonb, integer, internal, internal, internal, internal),
+function 6 gin_triconsistent_jsonb(internal, smallint, jsonb, integer, internal, internal, internal);
+
+-- Create an index with custom operator class
+-- drop index index_parent_children_json2jarr_name_custom;
+create index index_parent_children_json2jarr_name_custom on parents using gin (json2jarr(children, 'name') jsonb_ops_custom);
+
+-- Test it
+explain analyze select p.* from parents p where json2jarr(p.children, 'name') ^ 'Helen';
+
+---------------------------
+
 create extension pg_trgm;
 create extension btree_gin;
 
